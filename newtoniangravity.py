@@ -4,6 +4,8 @@ import pygame.draw, pygame.time, sys
 from math import sqrt, log, sin, cos
 from copy import deepcopy as copy
 
+#===============================================================================
+#Global variables 
 
 ORIGINX = 0
 ORIGINY = 0
@@ -14,18 +16,8 @@ GRAVEC = (6.67 * (10**-11)) * 1000
 
 VERBOSE = False
 
-CIRCLESIM = True
-"""bool: wheather or not a simulation of points in a circle are run"""
-
-LINESIM = False
-
-POINTSIM = False
-"""bool: wheather of not a simulation of points in some oreder is run
-		Overides CIRCLESIM and LiNESIM"""
-
-
-
-
+#===============================================================================
+#Main Class
 
 class gravpoint(object):
 	"""Points to be drawn in 3D space with mass and radius that simulate
@@ -124,15 +116,12 @@ class gravpoint(object):
 	def __eq__(self, other):
 		""" overrides the == operator to allow comparison of gravepoints 
 
-		Args:
-			other (:obj:'gravepoint'): other point beind compared to self
+		Args: other (:obj:'gravepoint'): other point beind compared to self
 
-		Note:
-			Never brings up a type error but will return false when comparing
-				a gravepoint to a non-gravepoint
+		Note: Never brings up a type error but will return false when comparing
+			a gravepoint to a non-gravepoint
 
-		Returns:
-			Bool
+		Returns: Bool
 
 		"""
 
@@ -145,10 +134,21 @@ class gravpoint(object):
 		return False
 
 	def __ne__(self, other):
+		""" overrides the != operator to allow comparison of gravepoints
+
+		Args: other (:obj:'gravepoint'): other point beind compared to self
+
+		Returns: Bool
+
+		"""
+
 		return not self == other
 
 	def __str__(self):
-		return "pos: {0}, mass: {1}, vel: {2}".format(self.pos,self.mass,self.vel)
+		return "pos:{0}, mass:{1}, vel:{2}".format(self.pos,self.mass,self.vel)
+
+#===============================================================================
+#helper functions		
 
 def distance(point1, point2):
 	""" calculates the distance between two points in 3D space 
@@ -159,8 +159,7 @@ def distance(point1, point2):
 		point2 (:obj:`array` of :obj:`float` len = 3): position of the point
 				in 3D space
 
-	Returns:
-		Int
+	Returns: Int
 
 	"""
 	sum = 0
@@ -175,11 +174,9 @@ def normalize(point):
 		point (:obj:`array` of :obj:`float` len = 3): position of the point
 				in 3D space
 
-	Side effects:
-		mutates point
+	Side effects: mutates point
 
-	Returns:
-		None
+	Returns: None
 
 	"""
 	if point.all() == 0:
@@ -190,16 +187,13 @@ def normalize(point):
 		point[i] = point[i]/dist
 
 def merge_detect(gpoints):
-	""" detects when two gpoints are close enough then merges them
+	""" detects when two gpoints are close enough, then merges them
 
-	Args:
-		gpoints:(:obj:'list' of :obj: gravepoint)
+	Args: gpoints:(:obj:'list' of :obj: gravepoint)
 
-	Side effects:
-		mutates gpoints according to the merges that are occuring
+	Side effects: mutates gpoints according to the merges that are occuring
 
-	Returns:
-		None
+	Returns: None
 
 	"""
 	for i in range(len(gpoints)):
@@ -220,38 +214,62 @@ def merge_detect(gpoints):
 				continue
 
 def gravity(gpoints):
+	""" Main engine for applying newtonian gravity
+
+	Args: gpoints:(:obj:'list' of :obj: gravepoint)
+
+	Side effects: mutates gpoints according to the merges that are occuring
+
+	Returns: None
+
+	"""
 	forces = []
 	for i in range(len(gpoints)):
+		#partial forces
+
 		par_forces = []
 		mainpoint = gpoints[i]
+
 		for j in range(len(gpoints)):
 			otherpoint = gpoints[j]
 			if i == j:
 				continue
+
+			#calculating force and distance between points i and j
 			force = (GRAVEC * (mainpoint.mass*1000 * otherpoint.mass*1000))
 			dist = distance(mainpoint.pos, otherpoint.pos)
+
+			#Simulating firctional forces
 			if dist == 0:
 				force = 0
 			else: 
 				force = force/(dist**2)
 				if dist <= 5:
 					force = log(force)
+
+			#creating force vector
 			par_force = copy(otherpoint.pos)
 			par_force = par_force - mainpoint.pos
 			normalize(par_force)
 			par_force = par_force*force
 
+			#adding force vector to list of force vectors
 			par_forces.append(par_force)
+
+		#adding all the forces of a point together	
 		force = np.array([0,0,0])
 		for i in range(len(par_forces)):
 			force = force + par_forces[i]
 
 		forces.append(force)
 
+	#applying the appropritate for to each point
 	for i in range(len(gpoints)):
 		gpoints[i].update(forces[i])
 
+
 def updateall(gpoints):
+	""" Applying both merge detecting and gravity funtions and moving points """
 	merge_detect(gpoints)
 	gravity(gpoints)
 	for gpoint in gpoints:
@@ -276,30 +294,58 @@ def draw_points(surface, colour, points, radi):
 #===============================================================================
 #Data
 
-#Datapoints for Line Simulation command
-gp1 = gravpoint(np.array([0,-50,0]), 100, np.array([0,0,0]))
-gp2 = gravpoint(np.array([0,50,0]), 100, np.array([0,0,0]))
-gp3 = gravpoint(np.array([50,0,0]), 100, np.array([0,0,0]))
-gp4 = gravpoint(np.array([-50,0,0]), 100, np.array([0,0,0]))
-gp5 = gravpoint(np.array([0,0,0]), 200, np.array([0,0,1]))
+#Datapoints used in multiple simulation
+gpoints = []
 centerp = gravpoint(np.array([0,0,0]), 1500, np.array([0,0,0]), imov = True)
-gpoints = [gp1, gp2, gp3, gp4]
+
+#Datapoints for Line Simulation command
+if "square" in sys.argv:
+	gp1 = gravpoint(np.array([0,-50,0]), 100, np.array([0,0,0]))
+	gp2 = gravpoint(np.array([0,50,0]), 100, np.array([0,0,0]))
+	gp3 = gravpoint(np.array([50,0,0]), 100, np.array([0,0,0]))
+	gp4 = gravpoint(np.array([-50,0,0]), 100, np.array([0,0,0]))
+	gp5 = gravpoint(np.array([0,0,0]), 200, np.array([0,0,1]))
+	gpoints += [gp1, gp2, gp3, gp4, gp5]
 
 #Datapoints for Circle Simulation command
-if CIRCLESIM:
-	gpoints = [centerp]
-	for i in range(0,360):
+if "circle" in sys.argv:
+	gpoints += [centerp]
+	for i in range(0,360,10):
 		cosang = cos(i)
 		sinang = sin(i)
 		sin2ang  = sin(i + 60)
 		cos2ang  = cos(i + 60)
-		gpoints.append(gravpoint(np.array([cosang*100,sinang*100,0]),
+		gpoints += [gravpoint(np.array([cosang*100,sinang*100,0]),
 		 50, np.array([cos2ang*10,sin2ang*10,0]),
-		  color = (abs(sinang)*255,abs(cosang)*255,abs(sin2ang)*255)))
+		  color = (abs(sinang)*255,abs(cosang)*255,abs(sin2ang)*255))]
+
+#Datapoints for Line Simulation command
+if "line" in sys.argv:
+	gp1 = gravpoint(np.array([0,-50,0]), 100, np.array([0,0,0]))
+	gp2 = gravpoint(np.array([0,50,0]), 100, np.array([0,0,0]))
+	gp3 = gravpoint(np.array([0,100,0]), 100, np.array([0,0,0]))
+	gp4 = gravpoint(np.array([0,-100,0]), 100, np.array([0,0,0]))
+	gp5 = gravpoint(np.array([0,200,0]), 100, np.array([0,0,0]))
+	gp6 = gravpoint(np.array([0,-200,0]), 100, np.array([0,0,0]))
+	gpoints += [gp1, gp2, gp3, gp4, gp5, gp6]
+
+#Datapoints for Stable orbit simulation command
+if "orbit" in sys.argv:
+	gp1 = gravpoint(np.array([0,0,0]), 2000, np.array([-1,0,0]))
+	gp2 = gravpoint(np.array([0,100,0]), 200, np.array([10,0,0]))
+	gpoints += [gp1, gp2]
 
 #===============================================================================
 
 def main():
+
+	#Checking for recognized command
+	try:
+		gpoints
+	except NameError:
+		print("No command given or command unrecognized")
+		sys.exit()
+
 	#Pygame screen setup
 	global ORIGINX, ORIGINY
 	pygame.init()
@@ -318,6 +364,11 @@ def main():
 			if event.type == pygame.QUIT:
 				pygame.quit()
 				sys.exit()
+			elif event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_ESCAPE:
+					pygame.quit()
+					sys.exit()
+
 
 		if VERBOSE:
 			print("Loop {0}".format(count))
@@ -335,7 +386,7 @@ def main():
 		#Resetting screen and updating points
 		pygame.display.flip()
 		pygame.time.delay(25)
-		screen.fill((255,255,255))
+		screen.fill((0,0,0))
 		updateall(gpoints)
 		count += 1
 
