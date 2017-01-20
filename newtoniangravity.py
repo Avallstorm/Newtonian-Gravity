@@ -296,7 +296,6 @@ def draw_points(surface, colour, points, radi):
 
 #Datapoints used in multiple simulation
 gpoints = []
-centerp = gravpoint(np.array([0,0,0]), 1500, np.array([0,0,0]), imov = True)
 
 #Datapoints for Line Simulation command
 if "square" in sys.argv:
@@ -309,6 +308,7 @@ if "square" in sys.argv:
 
 #Datapoints for Circle Simulation command
 if "circle" in sys.argv:
+	centerp = gravpoint(np.array([0,0,0]), 1500, np.array([0,0,0]), imov = True)
 	gpoints += [centerp]
 	for i in range(0,360,10):
 		cosang = cos(i)
